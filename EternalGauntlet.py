@@ -2,7 +2,7 @@ import random
 print('**********************************')
 print('*Welcome to the Eternal Gauntlet!*')
 print('**********************************')
-input()
+input('> ')
 
 
 class Mage:
@@ -24,9 +24,10 @@ class Melee:
 
 
 class Monsters:
-    def __init__(self, name, health):
+    def __init__(self, name, health, damage):
         self.name = name
         self.health = health
+        self.damage = damage
 
 # Weapon definitions
 basic_sword = Melee('hefty stick', 7)
@@ -39,9 +40,9 @@ basic_slingshot = Range('old slingshot', 5)
 basic_bow = Range('cracked wooden bow', 7)
 basic_throwing = Range('bag of good lookin\' rocks', 9)
 # Monster definitions
-weak_orc = Monsters('hungry goblin', 10)
-weak_dragon = Monsters('baby dragon', 14)
-weak_beastman = Monsters('rat man', 12)
+weak_orc = Monsters('hungry goblin', 10, 5)
+weak_dragon = Monsters('baby dragon', 14, 8)
+weak_beastman = Monsters('rat man', 12, 6)
 
 def monstergen():
     if playerlevel <4:
@@ -62,6 +63,7 @@ starting_items = ['slightly magical stick', 'glowing twig', 'Book of Magical Mis
                   'hefty branch', 'pillowcase full of rocks', 'rusty old knife']
 
 inventory = []
+playerhealth = 30
 playerlevel = 1
 levelprogress = 0
 classresult = random.randint(0, 8)
@@ -111,29 +113,46 @@ equipped = inventory[0]
 # Main game loop
 
 while True:
+    if playerhealth <= 0:
+        break
     print('Enter \"i\" for your inventory, any other key to continue to the next fight.')
-    i = input()
+    i = input('> ')
     if i == 'i':
         for item in range(len(inventory)):
             print(inventory[item].name)
         print( '\nEnter the name of the item to equip, or enter \'back\' to stop.')
-        i = input()
+        i = input('> ')
+        if i == 'back':
+            break
         for item in range(len(inventory)):
             if i.lower() in inventory[item].name.lower():
                 equipped = inventory[item]
                 print(equipped.name + ' is now equipped.')
     monster = monstergen()
     monsterhealth = monster.health
-    print('A ' + monster.name + ' attacks you!\n')
+    print('A ' + monster.name + ' appears!\n')
     while monsterhealth > 0:
-        print('The ' + monster.name + ' has ' + str(monsterhealth) + ' hp remaining.')
+        print('You have ' + str(playerhealth) + ' hp remaining.')
+        print('The ' + monster.name + ' has ' + str(monsterhealth) + ' hp remaining.\n')
         print('Press enter to attack, enter \'Q\' to give up.')
-        response = input()
+        response = input('> ')
         if response == '':
             monsterhealth -= equipped.damage
+            print('You deal ' + str(equipped.damage) + ' damage!')
+        if monsterhealth > 0:
+            playerhealth -= monster.damage
+            print('The ' + monster.name + ' hits you for ' + str(monster.damage) + ' damage!\n')
+            if playerhealth <= 0:
+                print('You die...')
+                input('> ')
+                break
         if monsterhealth <= 0:
             print('The ' + monster.name + ' dies!')
             levelprogress += 1
+            if levelprogress == 3:
+                playerlevel += 1
+                print('You have leveled up! You are now level ' + str(playerlevel))
+
 
 
 
