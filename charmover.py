@@ -4,44 +4,68 @@
 
 import os, subprocess, patoolib, zipfile, re
 
-chardir = 'C:\\users\\jtoat\\downloads\\Mugen chars'
-stagedir = 'C:\\users\\jtoat\\downloads\\Mugen stages'
-charfiles = os.listdir(chardir)
-stagefiles = os.listdir(stagedir)
-chardest = 'C:\\Games\\M.I.C.A Final Version Edition 1.1b1\\chars\\'
-stagedest = 'C:\\Games\\M.I.C.A Final Version Edition 1.1b1\\stages\\'
-sounddest = 'C:\\Games\\M.I.C.A Final Version Edition 1.1b1\\sound\\'
-stagecontents = os.listdir(stagedest)
-includedsoundcontents = os.listdir(stagedest + 'sound')
-musicRegex = re.compile(r'.*\.(?:ogg|mp3)')
-tally = 0
 
-for char in charfiles:
-    tally += 1
-    pathtochar = os.path.join(chardir, char)
-    if os.path.isfile(pathtochar):
-        patoolib.extract_archive(pathtochar, outdir=chardest)
-        os.remove(pathtochar)
-    else:
-        os.rename(pathtochar, chardest + char)
+def charmover():
+    downloaddir = 'C:\\users\\jtoat\\downloads\\MUGEN stuff\\'
+    chardir = downloaddir + 'MUGEN chars\\'
+    charfiles = os.listdir(chardir)
+    chardest = 'C:\\Games\\M.I.C.A Final Version Edition 1.1b1\\chars\\'
+    extractdir = downloaddir + 'Extracted_Files\\'
+    tally = 0
+    for char in charfiles:
+        pathtochar = os.path.join(chardir, char)
+        if os.path.isfile(pathtochar):
+            patoolib.extract_archive(pathtochar, outdir=extractdir)
+            filecount = 0
+            for file in os.listdir(extractdir):
+                if os.path.isfile(extractdir + file):
+                    filecount += 1
+            if filecount == 0:
+                tally += 1
+                for file in os.listdir(extractdir):
+                    os.rename(extractdir + file, chardest + file)
+            else:
+                os.mkdir(chardir + char[0:-4])
+                newdir = chardir + char[0:-4] + '\\'
+                newdirname = char[0:-4]
+                for file in os.listdir(extractdir):
+                    os.rename(extractdir + file, newdir + file)
+                os.rename(newdir, chardest + newdirname)
+                tally += 1
+            os.remove(pathtochar)
+        else:
+            tally += 1
+            os.rename(pathtochar, chardest + char)
+    print('\nCharacter transfer complete. {} characters were moved.'.format(tally))
 
-for stage in stagefiles:
-    tally += 1
-    pathtostage = os.path.join(stagedir, stage)
-    if os.path.isfile(pathtostage):
-        patoolib.extract_archive(pathtostage, outdir=stagedest)
-    else:
-        os.rename(pathtostage, stagedest + stage)
-        os.remove(pathtostage)
 
-for item in stagecontents:
-    if musicRegex.findall(str(item)) != []:
-        os.rename(os.path.join(stagedest, item), sounddest + str(item))
+def stagemover():
+    downloaddir = 'C:\\users\\jtoat\\downloads\\MUGEN stuff\\'
+    stagedir = downloaddir + 'Mugen stages\\'
+    stagefiles = os.listdir(stagedir)
+    stagedest = 'C:\\Games\\M.I.C.A Final Version Edition 1.1b1\\stages\\'
+    sounddest = 'C:\\Games\\M.I.C.A Final Version Edition 1.1b1\\sound\\'
+    stagecontents = os.listdir(stagedest)
+    includedsoundcontents = os.listdir(stagedest + 'sound')
+    musicRegex = re.compile(r'.*\.(?:ogg|mp3)')
+    tally = 0
+    for stage in stagefiles:
+        tally += 1
+        pathtostage = os.path.join(stagedir, stage)
+        if os.path.isfile(pathtostage):
+            patoolib.extract_archive(pathtostage, outdir=stagedest)
+        else:
+            os.rename(pathtostage, stagedest + stage)
+            os.remove(pathtostage)
+    for item in stagecontents:
+        if musicRegex.findall(str(item)) != []:
+            os.rename(os.path.join(stagedest, item), sounddest + str(item))
+    for item in includedsoundcontents:
+        if musicRegex.findall(str(item)) != []:
+            os.rename(os.path.join(stagedest + 'sound\\', item), sounddest + str(item))
+    print('Stage transfer complete. {} stages were moved.'.format(tally))
 
-for item in includedsoundcontents:
-    if musicRegex.findall(str(item)) != []:
-        os.rename(os.path.join(stagedest + 'sound\\', item), sounddest + str(item))
 
-print('\nFile transfer completed. ' + str(tally) + ' files were moved.')
-
+charmover()
+stagemover()
 os.startfile(r'C:\Games\M.I.C.A Final Version Edition 1.1b1\VSelect.exe')
