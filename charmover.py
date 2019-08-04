@@ -21,9 +21,14 @@ def charmover():
                 for file in os.listdir(extractdir):
                     os.rename(extractdir + file, chardest + file)
             else:
-                os.mkdir(chardir + char[0:-4])
-                newdir = chardir + char[0:-4] + '\\'
-                newdirname = char[0:-4]
+                if char[-3:] == '.7z':
+                    os.mkdir(chardir + char[0:-3])
+                    newdirname = char[:-3]
+                    newdir = chardir + newdirname + '\\'
+                else:
+                    os.mkdir(chardir + char[:-4])
+                    newdirname = char[:-4]
+                    newdir = chardir + newdirname + '\\'
                 for file in os.listdir(extractdir):
                     os.rename(extractdir + file, newdir + file)
                 os.rename(newdir, chardest + newdirname)
