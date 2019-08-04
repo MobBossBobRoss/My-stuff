@@ -16,11 +16,7 @@ def charmover():
         pathtochar = os.path.join(chardir, char)
         if os.path.isfile(pathtochar):
             patoolib.extract_archive(pathtochar, outdir=extractdir)
-            filecount = 0
-            for file in os.listdir(extractdir):
-                if os.path.isfile(extractdir + file):
-                    filecount += 1
-            if filecount == 0:
+            if len(os.listdir(extractdir)) == 1:
                 tally += 1
                 for file in os.listdir(extractdir):
                     os.rename(extractdir + file, chardest + file)
