@@ -19,9 +19,9 @@ def charmover():
     else:
         while True:
             print('Please input the path to your MUGEN root folder.')
-            mugenroot = input('> ')
+            mugenroot = input('> ').strip('\"')
             if os.path.exists(os.path.join(mugenroot, 'chars')):
-                with open(os.path.join(os.getcwd(), 'path.txt')) as m:
+                with open(os.path.join(os.getcwd(), 'path.txt'), 'w') as m:
                     m.write(mugenroot)
                 break
             else:
@@ -71,9 +71,9 @@ def stagemover():
     else:
         while True:
             print('Please input the path to your MUGEN root folder.')
-            mugenroot = input('> ')
+            mugenroot = input('> ').strip('\"')
             if os.path.exists(os.path.join(mugenroot, 'stages')):
-                with open(os.path.join(os.getcwd(), 'path.txt')) as m:
+                with open(os.path.join(os.getcwd(), 'path.txt'), 'w') as m:
                     m.write(mugenroot)
                 break
             else:
@@ -100,7 +100,7 @@ def stagemover():
     for item in stagecontents:
         if musicRegex.findall(str(item)) != []:
             os.rename(os.path.join(stagedest, item), os.path.join(sounddest, item))
-        print(f'Stage transfer complete. {tally} stages were moved.\n')
+    print(f'Stage transfer complete. {tally} stages were moved.\n')
     while True:
         print('Would you like to run VSelect? y/n')
         r = input('> ')
