@@ -35,24 +35,31 @@ def charmover():
         pathtochar = os.path.join(chardir, char)
         if os.path.isfile(pathtochar):
             patoolib.extract_archive(pathtochar, outdir=extractdir)
+            filecount = 0
             for item in os.listdir(extractdir):
-                if os.path.isdir(os.path.join(extractdir, item)):
+                if os.path.isfile(os.path.join(extractdir, item)):
+                    filecount += 1
+            if filecount <= 1:
+                for item in os.listdir(extractdir):
                     os.rename(os.path.join(extractdir, item), os.path.join(chardest, item))
                     tally += 1
+            else:
+                if char[-3:] == '.7z':
+                    newdirname = char[:-3]
+                    newdir = os.path.join(chardest, newdirname)
+                    if not os.path.exists(newdir):
+                        os.mkdir(os.path.join(chardest, char[:-3]))
+                    for item in os.listdir(extractdir):
+                        os.rename(os.path.join(extractdir, item), os.path.join(newdir, item))
+                        tally += 1
                 else:
-                    if char[-3:] == '.7z':
-                        newdirname = char[:-3]
-                        newdir = os.path.join(chardest, newdirname)
-                        if not os.path.exists(newdir):
-                            os.mkdir(os.path.join(chardest, char[:-3]))
+                    newdirname = char[:-4]
+                    newdir = os.path.join(chardest, newdirname)
+                    if not os.path.exists(newdir):
+                        os.mkdir(os.path.join(chardest, char[:-4]))
+                    for item in os.listdir(extractdir):
                         os.rename(os.path.join(extractdir, item), os.path.join(newdir, item))
-                    else:
-                        newdirname = char[:-4]
-                        newdir = os.path.join(chardest, newdirname)
-                        if not os.path.exists(newdir):
-                            os.mkdir(os.path.join(chardest, char[:-4]))
-                        os.rename(os.path.join(extractdir, item), os.path.join(newdir, item))
-                    tally += 1
+                        tally += 1
             os.remove(pathtochar)
         else:
             os.rename(pathtochar, os.path.join(chardest, char))
