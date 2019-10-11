@@ -1,127 +1,207 @@
 #! python3
-# charmover.py - This program extracts/moves files from its mugen character
-# and stage download folders to your mugen chars/stages folder.
+# charmover.py - This program extracts/moves files from its mugen
+# download folder to your mugen chars/stages folder.
 
 import os
 import patoolib
 import re
-
-
-def charmover():
-    downloaddir = os.getcwd()
-    if not os.path.exists(os.path.join(downloaddir, 'Mugen chars')):
-        os.mkdir(os.path.join(downloaddir, 'MUGEN chars'))
-    chardir = os.path.join(downloaddir, 'MUGEN chars')
-    charfiles = os.listdir(chardir)
-    if os.path.exists(os.path.join(os.getcwd(), 'path.txt')):
-        with open(os.path.join(os.getcwd(), 'path.txt')) as m:
+import shutil
+join = os.path.join
+exists = os.path.exists
+listdir = os.listdir
+def fileidentify():
+    parent_folder = os.getcwd()
+    extract_dir = join(parent_folder, 'Extracted')
+    charregex = re.compile(r'.*\.(?:cns|cmd|c)$')
+    stageregex = re.compile(r'.*\.(?:def|sff)$')
+    musicregex = re.compile(r'.*\.(?:ogg|mp3)$')
+    archiveregex = re.compile(r'.*\.(?:rar|7z|zip)$')
+    if not exists(extract_dir):
+        os.mkdir(extract_dir)
+    if os.path.exists(join(parent_folder, 'dlpath.txt')):
+        with open(join(parent_folder, 'dlpath.txt')) as dlpath:
+            downloads_folder = dlpath.read()
+    else:
+        while True:
+            print('Please input a path to the folder you wish to use for MUGEN downloads. Default is inside this '
+            'program\'s root folder.')
+            r = input('> ')
+            if r == '':
+                downloads_folder = join(parent_folder, 'Downloads')
+                if not exists(downloads_folder):
+                    os.mkdir(join(parent_folder, 'Downloads'))
+                with open(join(parent_folder, 'dlpath.txt'), 'w') as dlpath:
+                    dlpath.write(downloads_folder)
+                print(f'The downloads folder is now located at {downloads_folder}')
+                break
+            else:
+                if os.path.isdir(r):
+                    downloads_folder = r
+                    with open(join(parent_folder, 'dlpath.txt'), 'w') as pathfile:
+                        pathfile.write(downloads_folder)
+                    print(f'The downloads folder is now located at {downloads_folder}')
+                    break
+                else:
+                    print('It seems that path is not a valid directory.')
+    if os.path.exists(os.path.join(os.getcwd(), 'mugenpath.txt')):
+        with open(os.path.join(os.getcwd(), 'mugenpath.txt')) as m:
             mugenroot = m.read()
     else:
         while True:
             print('Please input the path to your MUGEN root folder.')
             mugenroot = input('> ').strip('\"')
             if os.path.exists(os.path.join(mugenroot, 'chars')):
-                with open(os.path.join(os.getcwd(), 'path.txt'), 'w') as m:
+                with open(os.path.join(os.getcwd(), 'mugenpath.txt'), 'w') as m:
                     m.write(mugenroot)
                 break
             else:
                 print('It seems that directory is invalid.')
-    chardest = os.path.join(mugenroot, 'chars')
-    if not os.path.exists(os.path.join(downloaddir, 'Extracted Files')):
-        os.mkdir(os.path.join(downloaddir, 'Extracted Files'))
-    extractdir = os.path.join(downloaddir, 'Extracted Files')
-    tally = 0
-    for char in charfiles:
-        pathtochar = os.path.join(chardir, char)
-        if os.path.isfile(pathtochar):
-            patoolib.extract_archive(pathtochar, outdir=extractdir)
+    character_dir = join(mugenroot, 'chars')
+    stage_dir = join(mugenroot, 'stages')
+    sound_dir = join(mugenroot, 'sound')
+    for outer_file in listdir(downloads_folder):
+        if exists(extract_dir):
+            shutil.rmtree(extract_dir)
+        if not exists(extract_dir):
+            os.mkdir(extract_dir)
+        archive = False
+        char_evidence = 0
+        stage_evidence = 0
+        path_to_outer_file = join(downloads_folder, outer_file)
+        if archiveregex.findall(outer_file) != []:
+            archive = True
+        if os.path.isdir(path_to_outer_file):
+            for inner_file in listdir(path_to_outer_file):
+                if os.path.isdir(join(path_to_outer_file, inner_file)):
+                    for innerer_file in listdir(join(path_to_outer_file, inner_file)):
+                        if charregex.findall(innerer_file) != []:
+                            char_evidence += 1
+                        if stageregex.findall(innerer_file) != []:
+                            stage_evidence += 1
+                else:
+                    if charregex.findall(inner_file) != []:
+                        char_evidence += 1
+                    if stageregex.findall(inner_file) != []:
+                        stage_evidence += 1
+            if char_evidence >= 1:
+                if exists(join(character_dir, outer_file)):
+                    shutil.rmtree(join(character_dir, outer_file))
+                os.rename(path_to_outer_file, join(character_dir, outer_file))
+            if char_evidence == 0 and stage_evidence >= 1:
+                for item in listdir(path_to_outer_file):
+                    if exists(join(stage_dir, item)):
+                        os.remove(join(stage_dir, item))
+                    os.rename(join(path_to_outer_file, item), join(stage_dir, item))
+                os.rmdir(path_to_outer_file)
+        if archive:
+            if os.path.getsize(path_to_outer_file) > 314572800:
+                continue
+            patoolib.extract_archive(path_to_outer_file, outdir=extract_dir)
             filecount = 0
-            for item in os.listdir(extractdir):
-                if os.path.isfile(os.path.join(extractdir, item)):
+            for extracted_item in os.listdir(extract_dir):
+                if os.path.isfile(join(extract_dir, extracted_item)):
                     filecount += 1
             if filecount <= 1:
-                for item in os.listdir(extractdir):
-                    os.rename(os.path.join(extractdir, item), os.path.join(chardest, item))
-                    tally += 1
+                for extracted_item in os.listdir(extract_dir):
+                    if os.path.isdir(join(extract_dir, extracted_item)):
+                        for item in listdir(join(extract_dir, extracted_item)):
+                            if charregex.findall(item) != []:
+                                char_evidence += 1
+                            if stageregex.findall(item) != []:
+                                stage_evidence += 1
+                if char_evidence >= 1:
+                    for extracted_item in listdir(extract_dir):
+                        if exists(join(character_dir, extracted_item)):
+                            shutil.rmtree(join(character_dir, extracted_item))
+                        os.rename(join(extract_dir, extracted_item), join(character_dir, extracted_item))
+                    for retry in range(100):
+                        try:
+                            os.remove(path_to_outer_file)
+                            break
+                        except:
+                            pass
+                if char_evidence == 0 and stage_evidence >= 1:
+                    for extracted_item in listdir(extract_dir):
+                        if os.path.isdir(join(extract_dir, extracted_item)):
+                            for inner_item in listdir(join(extract_dir, extracted_item)):
+                                if exists(join(stage_dir, inner_item)):
+                                    os.remove(join(stage_dir, inner_item))
+                                os.rename(join(extract_dir, extracted_item, inner_item), join(stage_dir, inner_item))
+                            os.rmdir(join(extract_dir, extracted_item))
+                        else:
+                            if exists(join(stage_dir, extracted_item)):
+                                os.remove(join(stage_dir, extracted_item))
+                            os.rename(join(extract_dir, extracted_item), join(stage_dir, extracted_item))
+                        for retry in range(100):
+                            try:
+                                os.rmdir(join(extract_dir, extracted_item))
+                                break
+                            except:
+                                pass
+                            try:
+                                os.remove(join(extract_dir, extracted_item))
+                            except:
+                                pass
+                    for retry in range(100):
+                        try:
+                            os.remove(path_to_outer_file)
+                            break
+                        except:
+                            pass
             else:
-                if char[-3:] == '.7z':
-                    newdirname = char[:-3]
-                    newdir = os.path.join(chardest, newdirname)
-                    if not os.path.exists(newdir):
-                        os.mkdir(os.path.join(chardest, char[:-3]))
-                    for item in os.listdir(extractdir):
-                        os.rename(os.path.join(extractdir, item), os.path.join(newdir, item))
-                        tally += 1
-                else:
-                    newdirname = char[:-4]
-                    newdir = os.path.join(chardest, newdirname)
-                    if not os.path.exists(newdir):
-                        os.mkdir(os.path.join(chardest, char[:-4]))
-                    for item in os.listdir(extractdir):
-                        os.rename(os.path.join(extractdir, item), os.path.join(newdir, item))
-                        tally += 1
-            os.remove(pathtochar)
-        else:
-            os.rename(pathtochar, os.path.join(chardest, char))
-            tally += 1
-    print(f'\nCharacter transfer complete. {tally} files were moved.')
-
-
-def stagemover():
-    downloaddir = os.getcwd()
-    if not os.path.exists(os.path.join(downloaddir, 'Mugen stages')):
-        os.mkdir(os.path.join(downloaddir, 'MUGEN stages'))
-    stagedir = os.path.join(downloaddir, 'MUGEN stages')
-    stagefiles = os.listdir(stagedir)
-    if os.path.exists(os.path.join(os.getcwd(), 'path.txt')):
-        with open(os.path.join(os.getcwd(), 'path.txt')) as m:
-            mugenroot = m.read()
-    else:
-        while True:
-            print('Please input the path to your MUGEN root folder.')
-            mugenroot = input('> ').strip('\"')
-            if os.path.exists(os.path.join(mugenroot, 'stages')):
-                with open(os.path.join(os.getcwd(), 'path.txt'), 'w') as m:
-                    m.write(mugenroot)
-                break
-            else:
-                print('It seems that directory is invalid.')
-    stagedest = os.path.join(mugenroot, 'stages')
-    sounddest = os.path.join(mugenroot, 'sound')
-    includedsound = os.path.join(stagedir, 'sound')
-    extractdir = os.path.join(downloaddir, 'Extracted Files')
-    musicRegex = re.compile(r'.*\.(?:ogg|mp3)')
-    tally = 0
-    for stage in stagefiles:
-        tally += 1
-        pathtostage = os.path.join(stagedir, stage)
-        if os.path.isfile(pathtostage):
-            patoolib.extract_archive(pathtostage, outdir=extractdir)
-            extractedstage = os.listdir(extractdir)
-            for item in extractedstage:
-                if os.path.isfile(os.path.join(extractdir, item)):
-                    os.rename(os.path.join(extractdir, item), os.path.join(stagedest, item))
-                else:
-                    extractedfolder = os.listdir(os.path.join(extractdir, item))
-                    for file in extractedfolder:
-                        os.rename(os.path.join(extractdir, item, file), os.path.join(stagedest, file))
-                    os.rmdir(os.path.join(extractdir, item))
-            os.remove(pathtostage)
-        else:
-            stagefolder = os.listdir(pathtostage)
-            for item in stagefolder:
-                os.rename(os.path.join(pathtostage, item), os.path.join(stagedest, item))
-            os.rmdir(pathtostage)
-        if os.path.exists(includedsound):
-            includedsoundcontents = os.listdir(includedsound)
-            for item in includedsoundcontents:
-                os.rename(os.path.join(includedsound, item), os.path.join(sounddest, item))
-            os.rmdir(includedsound)
-    stagecontents = os.listdir(stagedest)
-    for item in stagecontents:
-        if musicRegex.findall(str(item)) != []:
-            os.rename(os.path.join(stagedest, item), os.path.join(sounddest, item))
-    print(f'Stage transfer complete. {tally} files were moved.\n')
+                for extracted_item in listdir(extract_dir):
+                    if os.path.isdir(join(extract_dir, extracted_item)):
+                        for item in listdir(join(extract_dir, extracted_item)):
+                            if charregex.findall(item) != []:
+                                char_evidence += 1
+                            if stageregex.findall(item) != []:
+                                stage_evidence += 1
+                    else:
+                        if charregex.findall(extracted_item) != []:
+                            char_evidence += 1
+                        if stageregex.findall(extracted_item) != []:
+                            stage_evidence += 1
+                if char_evidence >= 1:
+                    if outer_file[-3:] == '.7z':
+                        newdirname = outer_file[:-3]
+                        newdir = os.path.join(character_dir, newdirname)
+                        if not os.path.exists(newdir):
+                            os.mkdir(newdir)
+                        for item in os.listdir(extract_dir):
+                            if exists(join(newdir, item)):
+                                os.remove(join(newdir, item))
+                            os.rename(os.path.join(extract_dir, item), os.path.join(newdir, item))
+                    else:
+                        newdirname = outer_file[:-4]
+                        newdir = os.path.join(character_dir, newdirname)
+                        if not os.path.exists(newdir):
+                            os.mkdir(newdir)
+                        for item in os.listdir(extract_dir):
+                            if exists(join(newdir, item)):
+                                os.remove(join(newdir, item))
+                            os.rename(os.path.join(extract_dir, item), os.path.join(newdir, item))
+                    for retry in range(100):
+                        try:
+                            os.remove(path_to_outer_file)
+                            break
+                        except:
+                            pass
+                if char_evidence == 0 and stage_evidence >= 1:
+                    for item in listdir(extract_dir):
+                        if exists(join(stage_dir, item)):
+                            os.remove(join(stage_dir, item))
+                        os.rename(join(extract_dir, item), join(stage_dir, item))
+                    for retry in range(100):
+                        try:
+                            os.remove(path_to_outer_file)
+                            break
+                        except:
+                            pass
+    for item in listdir(stage_dir):
+        if musicregex.findall(str(item)) != []:
+            if exists(join(sound_dir, item)):
+                os.remove(join(sound_dir, item))
+            os.rename(os.path.join(stage_dir, item), os.path.join(sound_dir, item))
     while True:
         print('Thank you for using Fun_Police\'s Char_Mover!\nWould you like to run VSelect? y/n')
         r = input('> ')
@@ -137,6 +217,4 @@ def stagemover():
             break
 
 
-charmover()
-stagemover()
-
+fileidentify()
